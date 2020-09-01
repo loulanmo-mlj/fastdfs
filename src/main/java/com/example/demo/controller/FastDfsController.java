@@ -3,17 +3,26 @@ package com.example.demo.controller;
 import com.example.demo.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 import org.csource.common.MyException;
 import org.csource.common.NameValuePair;
 import org.csource.fastdfs.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.multipart.MultipartResolver;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 import java.io.*;
 import java.net.URLEncoder;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -55,25 +64,31 @@ public class FastDfsController {
     /**
      * 上传文件流到FastDFS
      *
-     * @param input
      */
     @PostMapping(value = "fastDFSUploadStream")
-    public Map<String,String>  fastDFSUploadStream(@RequestParam("file") InputStream input,@RequestParam("extName") String extName) {
-        if(input==null){
-            log.info("file is null");
-            String str="file is null";
-            Map<String,String>returnMap=new HashMap<>();
-            returnMap.put("msg",str);
-            return returnMap;
-        }
+    public Map<String,String>  fastDFSUploadStream(HttpServletRequest request) {
         byte[] bytes = null;
+        InputStream is = null;
+        String ext_Name="";
         try {
-            bytes = toByteArray(input);
-        } catch (IOException e) {
+            Part part = request.getPart("file");
+            String fileName=part.getSubmittedFileName();
+            int t=fileName.lastIndexOf(".");
+            ext_Name = fileName.substring(t+1);
+            is=part.getInputStream();
+            if(is==null){
+                log.info("file is null");
+                String str="file is null";
+                Map<String,String>returnMap=new HashMap<>();
+                returnMap.put("msg",str);
+                return returnMap;
+            }
+        bytes = toByteArray(is);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        Map<String,String> filePath= uploadFile(bytes, extName, "");
+        Map<String,String> filePath= uploadFile(bytes, ext_Name, "");
         return filePath;
     }
     /**
